@@ -104,6 +104,16 @@
   .separador{height:1px; background:var(--gris-claro); margin:14px 0;}
   .cantidad-ctrl{display:flex; align-items:center; gap:8px;}
   .cantidad-ctrl button{width:34px; height:34px; padding:0; font-size:18px; background:var(--rosa-claro); color:var(--rosa);}
+  .grid-cat{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .cat-card{background:var(--blanco); border-radius:14px; overflow:hidden; box-shadow:var(--sombra); border:1px solid var(--gris-claro);}
+  .cat-card .foto{width:100%; aspect-ratio:1/1; background:var(--rosa-claro); display:flex; align-items:center; justify-content:center; font-size:38px;}
+  .cat-card .foto img{width:100%; height:100%; object-fit:cover;}
+  .cat-card .info{padding:8px 10px;}
+  .cat-card .nom{font-weight:700; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .cat-card .pre{color:var(--rosa); font-weight:800; font-size:15px;}
+  .sel-fila{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--gris-claro);}
+  .sel-fila img{width:38px;height:38px;border-radius:8px;object-fit:cover;flex:none;}
+  .sel-fila .ph{width:38px;height:38px;border-radius:8px;background:var(--rosa-claro);display:flex;align-items:center;justify-content:center;flex:none;}
 </style>
 </head>
 <body>
@@ -168,6 +178,13 @@
     <div id="lista-productos"></div>
   </section>
 
+  <!-- ====== CATÁLOGO ====== -->
+  <section id="sec-catalogo">
+    <h2>Cat&aacute;logo</h2>
+    <button class="btn-rosa" id="btn-post-ig" type="button" style="margin-bottom:12px">&#128248; Crear post para Instagram</button>
+    <div id="lista-catalogo"></div>
+  </section>
+
   <!-- ====== PANEL ====== -->
   <section id="sec-panel">
     <h2>Panel</h2>
@@ -215,6 +232,7 @@
   <button data-sec="vender" class="activo" type="button"><span class="ico">&#128722;</span>Vender</button>
   <button data-sec="clientas" type="button"><span class="ico">&#128105;</span>Clientas</button>
   <button data-sec="productos" type="button"><span class="ico">&#128132;</span>Productos</button>
+  <button data-sec="catalogo" type="button"><span class="ico">&#128247;</span>Cat&aacute;logo</button>
   <button data-sec="panel" type="button"><span class="ico">&#128202;</span>Panel</button>
   <button data-sec="ajustes" type="button"><span class="ico">&#9881;</span>Reglas</button>
 </nav>
@@ -300,6 +318,7 @@ function mostrarSeccion(nombre){
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("activo", b.dataset.sec===nombre));
   if(nombre==="clientas") renderClientas();
   if(nombre==="productos") renderProductos();
+  if(nombre==="catalogo") renderCatalogo();
   if(nombre==="panel") renderPanel();
   if(nombre==="ajustes") renderAjustes();
   if(nombre==="vender") renderVender();
@@ -811,6 +830,152 @@ function escapar(s){
 }
 
 /* ============================================================
+   CATÁLOGO + POST DE INSTAGRAM
+   ============================================================ */
+function renderCatalogo(){
+  const cont = document.getElementById("lista-catalogo");
+  if(!estado.productos.length){
+    cont.innerHTML = '<div class="vacio">Aún no hay productos. Agrega algunos (con foto) para armar tu catálogo.</div>';
+    return;
+  }
+  cont.innerHTML = '<div class="grid-cat">' + estado.productos.map(p=>`
+    <div class="cat-card">
+      <div class="foto">${p.imagen?`<img src="${p.imagen}">`:"&#128132;"}</div>
+      <div class="info">
+        <div class="nom">${escapar(p.nombre)}</div>
+        <div class="pre">${pesos(p.precio)}</div>
+      </div>
+    </div>`).join("") + '</div>';
+}
+
+let seleccionIG = [];
+
+function abrirSelectorIG(){
+  const conFoto = estado.productos.filter(p=>p.imagen);
+  const base = conFoto.length ? conFoto : estado.productos;
+  if(!base.length){ alert("Primero agrega productos."); return; }
+  seleccionIG = base.slice(0,6).map(p=>p.id);
+  abrirModal(`
+    <h3>Crear post para Instagram</h3>
+    <p class="mini">Elige hasta 6 productos (ideal con foto). Se arma una imagen lista para subir.</p>
+    <div id="sel-ig-lista" style="max-height:52vh;overflow-y:auto"></div>
+    <button class="btn-rosa" type="button" style="margin-top:12px" onclick="generarPostIG()">Generar imagen</button>
+  `);
+  pintarSelectorIG();
+}
+
+function pintarSelectorIG(){
+  const cont = document.getElementById("sel-ig-lista");
+  cont.innerHTML = estado.productos.map(p=>{
+    const marcado = seleccionIG.includes(p.id);
+    const thumb = p.imagen?`<img src="${p.imagen}">`:`<div class="ph">&#128132;</div>`;
+    return `<label class="sel-fila">
+      <input type="checkbox" style="width:20px;height:20px;flex:none" ${marcado?"checked":""} onchange="alternarIG('${p.id}', this.checked)">
+      ${thumb}
+      <div style="flex:1;min-width:0">
+        <div class="nombre">${escapar(p.nombre)}</div>
+        <div class="mini">${pesos(p.precio)}</div>
+      </div>
+    </label>`;
+  }).join("");
+}
+
+function alternarIG(id, marcar){
+  if(marcar){
+    if(seleccionIG.length>=6){ alert("Máximo 6 productos."); pintarSelectorIG(); return; }
+    if(!seleccionIG.includes(id)) seleccionIG.push(id);
+  }else{
+    seleccionIG = seleccionIG.filter(x=>x!==id);
+  }
+}
+
+function generarPostIG(){
+  const prods = seleccionIG.map(id=>buscarProducto(id)).filter(Boolean);
+  if(!prods.length){ alert("Elige al menos un producto."); return; }
+
+  const W=1080, H=1350;
+  const lienzo = document.createElement("canvas");
+  lienzo.width=W; lienzo.height=H;
+  const ctx = lienzo.getContext("2d");
+
+  // fondo
+  ctx.fillStyle="#fff2f8"; ctx.fillRect(0,0,W,H);
+  // banda superior
+  bordeRedondo(ctx,40,40,W-80,210,40); ctx.fillStyle="#ffd7e9"; ctx.fill();
+  ctx.textAlign="center";
+  ctx.fillStyle="#d63384"; ctx.font="800 90px sans-serif"; ctx.fillText("Xime Glow", W/2, 150);
+  ctx.fillStyle="#201820"; ctx.font="400 34px sans-serif"; ctx.fillText("Belleza que brilla contigo", W/2, 205);
+
+  // grid 2 columnas
+  const cols=2, gx=60, gap=40, cw=(W-2*gx-gap)/cols, ch=300;
+  const gy=300;
+  let cargadas=0;
+  const total=prods.length;
+
+  function dibujarCelda(p, idx, cb){
+    const r=Math.floor(idx/cols), c=idx%cols;
+    const x=gx+c*(cw+gap), y=gy+r*(ch+22);
+    bordeRedondo(ctx,x,y,cw,ch,24); ctx.fillStyle="#ffffff"; ctx.fill();
+    const lado=cw-110, fx=x+(cw-lado)/2, fy=y+16;
+    const terminar=()=>{
+      ctx.fillStyle="#201820"; ctx.font="700 28px sans-serif"; ctx.textAlign="center";
+      ctx.fillText(recorta(p.nombre,16), x+cw/2, y+ch-70);
+      const pre=pesos(p.precio); ctx.font="800 34px sans-serif";
+      const pw=ctx.measureText(pre).width;
+      bordeRedondo(ctx, x+cw/2-pw/2-20, y+ch-52, pw+40, 40, 18); ctx.fillStyle="#ff4fa3"; ctx.fill();
+      ctx.fillStyle="#fff"; ctx.fillText(pre, x+cw/2, y+ch-22);
+      cb();
+    };
+    if(p.imagen){
+      const im=new Image();
+      im.onload=()=>{ bordeRedondo(ctx,fx,fy,lado,lado,18); ctx.save(); ctx.clip(); ctx.drawImage(im,fx,fy,lado,lado); ctx.restore(); terminar(); };
+      im.onerror=()=>{ bordeRedondo(ctx,fx,fy,lado,lado,18); ctx.fillStyle="#ffd7e9"; ctx.fill(); terminar(); };
+      im.src=p.imagen;
+    }else{
+      bordeRedondo(ctx,fx,fy,lado,lado,18); ctx.fillStyle="#ffd7e9"; ctx.fill();
+      ctx.fillStyle="#ff4fa3"; ctx.font="60px sans-serif"; ctx.fillText("\uD83D\uDC84", x+cw/2, fy+lado/2+20);
+      terminar();
+    }
+  }
+
+  // footer
+  function footer(){
+    bordeRedondo(ctx,40,H-110,W-80,70,30); ctx.fillStyle="#ffd7e9"; ctx.fill();
+    ctx.fillStyle="#d63384"; ctx.font="700 36px sans-serif"; ctx.textAlign="center";
+    ctx.fillText("Haz tu pedido  ·  @ximeglow.mx", W/2, H-62);
+  }
+
+  // dibujar celdas en secuencia (porque las imágenes cargan async)
+  let i=0;
+  function siguiente(){
+    if(i>=total){ footer(); mostrarPostIG(lienzo); return; }
+    dibujarCelda(prods[i], i, ()=>{ i++; siguiente(); });
+  }
+  siguiente();
+}
+
+function bordeRedondo(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function recorta(s,n){ s=String(s); return s.length>n ? s.slice(0,n-1)+"…" : s; }
+
+function mostrarPostIG(lienzo){
+  const dataUrl = lienzo.toDataURL("image/jpeg", 0.92);
+  abrirModal(`
+    <h3>Tu post está listo &#128248;</h3>
+    <img src="${dataUrl}" style="width:100%;border-radius:14px;margin:8px 0">
+    <a href="${dataUrl}" download="xime-glow-post.jpg" class="btn-rosa" style="display:block;text-align:center;text-decoration:none;padding:13px">Descargar imagen</a>
+    <p class="mini" style="margin-top:8px">Desc&aacute;rgala y s&uacute;bela a Instagram como publicaci&oacute;n o historia.</p>
+  `);
+}
+
+/* ============================================================
    FOTO DE PRODUCTO (usa el servidor de Render)
    ============================================================ */
 var fotoProductoTemp = null;
@@ -822,36 +987,62 @@ function procesarFotoProducto(evento){
   const estadoTxt = document.getElementById("f-foto-estado");
   const url = (estado.config.urlFotos || "").trim();
 
+  // 1) Mostrar YA la foto (miniatura) para que no se vea vacío y haya respaldo
+  redimensionarADataUrl(archivo, 480, dataUrl=>{
+    fotoProductoTemp = dataUrl;
+    pintarPreviewFoto(dataUrl);
+  });
+
   if(!url){
-    // sin servidor: guardamos la foto tal cual (miniatura), sin mejora
-    estadoTxt.textContent = "Guardada sin mejorar (configura el servidor en Reglas para quitar fondo).";
-    redimensionarADataUrl(archivo, 420, dataUrl=>{
-      fotoProductoTemp = dataUrl;
-      pintarPreviewFoto(dataUrl);
-    });
+    estadoTxt.textContent = "Guardada sin mejorar (pon el servidor en Reglas para quitar fondo).";
     return;
   }
 
-  estadoTxt.textContent = "Mejorando foto… espera unos segundos.";
-  const form = new FormData();
-  form.append("foto", archivo);
-  fetch(url + "/mejorar", { method:"POST", body:form })
-    .then(r=>{ if(!r.ok) throw new Error("El servidor respondió " + r.status); return r.blob(); })
-    .then(blob=>{
-      redimensionarADataUrl(blob, 420, dataUrl=>{
-        fotoProductoTemp = dataUrl;
-        pintarPreviewFoto(dataUrl);
-        estadoTxt.textContent = "¡Foto lista! ✓";
+  // 2) Encoger a ~1000px ANTES de enviar (mucho más rápido)
+  estadoTxt.textContent = "Mejorando foto… la primera puede tardar (servidor despertando).";
+  redimensionarABlob(archivo, 1000, blobChico=>{
+    if(!blobChico){ estadoTxt.textContent = "Guardada sin mejorar (no se pudo preparar la foto)."; return; }
+    const form = new FormData();
+    form.append("foto", blobChico, "foto.jpg");
+
+    const controlador = new AbortController();
+    const reloj = setTimeout(()=>controlador.abort(), 120000); // hasta 2 min por si despierta
+
+    fetch(url + "/mejorar", { method:"POST", body:form, signal:controlador.signal })
+      .then(r=>{ if(!r.ok) throw new Error("servidor " + r.status); return r.blob(); })
+      .then(blob=>{
+        clearTimeout(reloj);
+        redimensionarADataUrl(blob, 480, dataUrl=>{
+          fotoProductoTemp = dataUrl;
+          pintarPreviewFoto(dataUrl);
+          estadoTxt.textContent = "¡Foto lista con fondo lila! ✓";
+        });
+      })
+      .catch(err=>{
+        clearTimeout(reloj);
+        console.error(err);
+        estadoTxt.textContent = "Se guard&oacute; sin mejorar (el servidor estaba dormido). Toca otra vez \"Tomar / elegir foto\" en unos segundos para mejorarla.";
       });
-    })
-    .catch(err=>{
-      console.error(err);
-      estadoTxt.textContent = "No se pudo mejorar (¿servidor dormido? reintenta). Guardando sin mejorar…";
-      redimensionarADataUrl(archivo, 420, dataUrl=>{
-        fotoProductoTemp = dataUrl;
-        pintarPreviewFoto(dataUrl);
-      });
-    });
+  });
+}
+
+function redimensionarABlob(origen, ladoMax, callback){
+  const img = new Image();
+  const url = URL.createObjectURL(origen);
+  img.onload = ()=>{
+    try{
+      let w = img.width, h = img.height;
+      const escala = Math.min(1, ladoMax/Math.max(w,h));
+      w = Math.round(w*escala); h = Math.round(h*escala);
+      const lienzo = document.createElement("canvas");
+      lienzo.width = w; lienzo.height = h;
+      lienzo.getContext("2d").drawImage(img, 0, 0, w, h);
+      lienzo.toBlob(b=> callback(b), "image/jpeg", 0.88);
+    }catch(e){ console.error(e); callback(null); }
+    finally{ URL.revokeObjectURL(url); }
+  };
+  img.onerror = ()=>{ URL.revokeObjectURL(url); callback(null); };
+  img.src = url;
 }
 
 function pintarPreviewFoto(dataUrl){
@@ -914,6 +1105,7 @@ function salirDemo(){
 
 document.getElementById("btn-demo").addEventListener("click", entrarDemo);
 document.getElementById("btn-salir-demo").addEventListener("click", salirDemo);
+document.getElementById("btn-post-ig").addEventListener("click", abrirSelectorIG);
 
 /* ---------- Arranque ---------- */
 cargarEstado();
