@@ -208,6 +208,13 @@
   <!-- ====== PANEL ====== -->
   <section id="sec-panel">
     <h2>Panel</h2>
+    <div class="tarjeta" id="tarjeta-sync" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div style="min-width:0">
+        <div style="font-weight:700;font-size:14px">&#128260; Sincronizaci&oacute;n</div>
+        <div class="mini" id="sync-estado">Revisando…</div>
+      </div>
+      <button class="btn-linea btn-chico" id="btn-sync" type="button" style="width:auto;flex:none">Sincronizar</button>
+    </div>
     <div class="tablero">
       <div class="dato"><div class="num" id="panel-ganancia">$0</div><div class="etq">Ganancia (si todo se paga)</div></div>
       <div class="dato"><div class="num" id="panel-cobrado">$0</div><div class="etq">Cobrado</div></div>
@@ -240,9 +247,12 @@
       <label>PIN para cambiar estas reglas (opcional)</label>
       <input type="text" id="cfg-pin" inputmode="numeric" maxlength="6" placeholder="Sin PIN">
       <p class="mini">Si lo pones, solo quien sepa el PIN puede cambiar las reglas.</p>
-      <label>URL del servidor de fotos (Render)</label>
-      <input type="text" id="cfg-url-fotos" inputmode="url" placeholder="https://xime-glow-fotos.onrender.com">
-      <p class="mini">Pega aquí la direcci&oacute;n de tu servidor de Render para mejorar las fotos. D&eacute;jalo vac&iacute;o si a&uacute;n no lo tienes.</p>
+      <label>URL del servidor (Render)</label>
+      <input type="text" id="cfg-url-fotos" inputmode="url" placeholder="https://xime-glow.onrender.com">
+      <p class="mini">Direcci&oacute;n de tu servidor de Render. Sirve para mejorar fotos Y para sincronizar PC y celular.</p>
+      <label>C&oacute;digo de sincronizaci&oacute;n (SYNC_PIN)</label>
+      <input type="text" id="cfg-pin-sync" inputmode="text" placeholder="El mismo que pusiste en Render (opcional)">
+      <p class="mini">Debe ser igual en todos los dispositivos. D&eacute;jalo vac&iacute;o si no configuraste SYNC_PIN en Render.</p>
       <button class="btn-rosa" id="btn-guardar-cfg" type="button" style="margin-top:14px">Guardar reglas</button>
     </div>
   </section>
@@ -270,7 +280,8 @@
 const CLAVE_ALMACEN = "ximeGlow_v1";
 
 let estado = {
-  config: { factorSugerido: 1.8, margenMinimoPct: 25, pin: "", urlFotos: "" },
+  config: { factorSugerido: 1.8, margenMinimoPct: 25, pin: "", urlFotos: "", pinSync: "" },
+  actualizado: null,
   productos: [],
   clientas: [],
   ventas: []
@@ -297,14 +308,16 @@ function cargarEstado(){
   }
 }
 
-function guardarEstado(){
+function guardarEstado(marcarCambio){
   if(modoDemo) return; // en demo no se guarda nada real
+  if(marcarCambio !== false){ estado.actualizado = new Date().toISOString(); }
   try{
     localStorage.setItem(CLAVE_ALMACEN, JSON.stringify(estado));
   }catch(e){
     console.error("No se pudo guardar:", e);
     alert("No se pudo guardar. Revisa el espacio del celular.");
   }
+  agendarSubida();
 }
 
 /* ---------- Utilidades ---------- */
@@ -801,7 +814,8 @@ document.getElementById("archivo-importar").addEventListener("change", e=>{
       const datos = JSON.parse(ev.target.result);
       if(!datos || typeof datos!=="object") throw new Error("Archivo inválido");
       if(!confirm("Esto reemplaza los datos actuales por los del respaldo. ¿Continuar?")) return;
-      estado.config = Object.assign({factorSugerido:1.8,margenMinimoPct:25,pin:"",urlFotos:""}, datos.config||{});
+      estado.config = Object.assign({factorSugerido:1.8,margenMinimoPct:25,pin:"",urlFotos:"",pinSync:""}, datos.config||{});
+      estado.actualizado = datos.actualizado || null;
       estado.productos = Array.isArray(datos.productos)?datos.productos:[];
       estado.clientas = Array.isArray(datos.clientas)?datos.clientas:[];
       estado.ventas = Array.isArray(datos.ventas)?datos.ventas:[];
@@ -829,6 +843,7 @@ function renderAjustes(){
   document.getElementById("cfg-margen").value = estado.config.margenMinimoPct;
   document.getElementById("cfg-pin").value = estado.config.pin || "";
   document.getElementById("cfg-url-fotos").value = estado.config.urlFotos || "";
+  document.getElementById("cfg-pin-sync").value = estado.config.pinSync || "";
 }
 document.getElementById("btn-guardar-cfg").addEventListener("click", ()=>{
   const factor = Number(document.getElementById("cfg-factor").value);
@@ -840,13 +855,94 @@ document.getElementById("btn-guardar-cfg").addEventListener("click", ()=>{
   estado.config.margenMinimoPct = margen;
   estado.config.pin = pin;
   estado.config.urlFotos = (document.getElementById("cfg-url-fotos").value || "").trim().replace(/\/$/, "");
+  estado.config.pinSync = (document.getElementById("cfg-pin-sync").value || "").trim();
   guardarEstado();
   alert("Reglas guardadas ✓");
+  sincronizarBajar(true);
 });
 
 /* ---------- Seguridad texto ---------- */
 function escapar(s){
   return String(s==null?"":s).replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+}
+
+/* ============================================================
+   SINCRONIZACIÓN (PC <-> celular) vía servidor de Render
+   Última escritura gana (por marca de tiempo).
+   ============================================================ */
+var relojSubida = null;
+var sincronizando = false;
+
+function baseServidor(){ return (estado.config.urlFotos || "").trim().replace(/\/$/, ""); }
+
+function ponerEstadoSync(txt){
+  const el = document.getElementById("sync-estado");
+  if(el) el.textContent = txt;
+}
+
+function agendarSubida(){
+  if(modoDemo) return;
+  if(!baseServidor()) return;
+  clearTimeout(relojSubida);
+  relojSubida = setTimeout(sincronizarSubir, 1500); // sube 1.5s después del último cambio
+}
+
+function sincronizarSubir(){
+  const base = baseServidor();
+  if(!base || modoDemo) return;
+  ponerEstadoSync("Guardando en la nube…");
+  const cuerpo = { pin: estado.config.pinSync || "", estado: estado, actualizado: estado.actualizado || new Date().toISOString() };
+  fetch(base + "/datos", {
+    method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(cuerpo)
+  })
+  .then(r=>{ if(!r.ok) throw new Error("servidor " + r.status); return r.json(); })
+  .then(res=>{ ponerEstadoSync("Guardado en la nube ✓  (" + horaCorta(res.actualizado) + ")"); })
+  .catch(err=>{ console.error(err); ponerEstadoSync("Sin conexión: se guardó solo en este aparato."); });
+}
+
+function sincronizarBajar(avisar){
+  const base = baseServidor();
+  if(!base){ if(avisar) alert("Primero pon la URL del servidor en Reglas."); ponerEstadoSync("Sin servidor configurado (ponlo en Reglas)."); return; }
+  if(sincronizando) return;
+  sincronizando = true;
+  ponerEstadoSync("Buscando datos en la nube…");
+  const pin = encodeURIComponent(estado.config.pinSync || "");
+  fetch(base + "/datos?pin=" + pin)
+    .then(r=>{ if(!r.ok) throw new Error("servidor " + r.status); return r.json(); })
+    .then(res=>{
+      if(!res || !res.estado){ ponerEstadoSync("La nube está vacía. Al primer cambio se sube."); return; }
+      const remoto = res.actualizado || "";
+      const local = estado.actualizado || "";
+      if(remoto && remoto > local){
+        // la nube tiene algo más nuevo: lo traemos
+        const r = res.estado;
+        estado.config = Object.assign(estado.config, r.config || {});
+        estado.productos = Array.isArray(r.productos) ? r.productos : [];
+        estado.clientas = Array.isArray(r.clientas) ? r.clientas : [];
+        estado.ventas = Array.isArray(r.ventas) ? r.ventas : [];
+        estado.actualizado = remoto;
+        guardarEstado(false); // guarda local sin cambiar la marca
+        refrescarVistaActual();
+        ponerEstadoSync("Actualizado desde la nube ✓  (" + horaCorta(remoto) + ")");
+      }else{
+        ponerEstadoSync("Al día ✓  (" + horaCorta(local||remoto) + ")");
+        // si lo local es más nuevo, lo subimos
+        if(local && local > remoto) sincronizarSubir();
+      }
+    })
+    .catch(err=>{ console.error(err); ponerEstadoSync("No se pudo conectar (¿servidor dormido? reintenta)."); })
+    .finally(()=>{ sincronizando = false; });
+}
+
+function refrescarVistaActual(){
+  const activa = document.querySelector("nav button.activo");
+  mostrarSeccion(activa ? activa.dataset.sec : "vender");
+}
+
+function horaCorta(iso){
+  if(!iso) return "";
+  try{ const d = new Date(iso); return d.toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}); }
+  catch(e){ return ""; }
 }
 
 /* ============================================================
@@ -1177,10 +1273,12 @@ document.getElementById("btn-salir-demo").addEventListener("click", salirDemo);
 document.getElementById("btn-post-ig").addEventListener("click", abrirSelectorIG);
 document.getElementById("cat-buscar").addEventListener("input", debounce(function(){ catBusqueda = this.value.trim(); renderCatalogo(); }, 200));
 document.getElementById("cat-orden").addEventListener("change", function(){ catOrden = this.value; renderCatalogo(); });
+document.getElementById("btn-sync").addEventListener("click", ()=> sincronizarBajar(true));
 
 /* ---------- Arranque ---------- */
 cargarEstado();
 renderVender();
+if(baseServidor()){ sincronizarBajar(false); } else { ponerEstadoSync("Sin servidor configurado (ponlo en Reglas)."); }
 </script>
 </body>
 </html>
