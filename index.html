@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Xime Glow · Ventas</title>
+<style>
+  :root{
+    --rosa:#ff4fa3; --rosa-claro:#ffd7e9; --rosa-fondo:#fff2f8;
+    --negro:#201820; --gris:#8a7f86; --gris-claro:#efe6ec;
+    --ok:#16a34a; --alerta:#dc2626; --aviso:#d97706;
+    --blanco:#ffffff; --sombra:0 2px 10px rgba(255,79,163,.18);
+    --radio:16px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --rosa:#ff6fb3; --rosa-claro:#4a2238; --rosa-fondo:#1a1016;
+      --negro:#f7eef3; --gris:#b99fad; --gris-claro:#33222c;
+      --blanco:#241820; --sombra:0 2px 10px rgba(0,0,0,.4);
+    }
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--rosa-fondo); color:var(--negro);
+    padding:0 0 84px 0; max-width:680px; margin:0 auto; min-height:100vh;
+  }
+  header{
+    position:sticky; top:0; z-index:20; background:var(--rosa);
+    color:#fff; padding:14px 16px; display:flex; align-items:center; gap:10px;
+    box-shadow:var(--sombra);
+  }
+  header .corona{font-size:22px;}
+  header h1{font-size:20px; margin:0; font-weight:800; letter-spacing:.3px;}
+  header small{display:block; font-size:11px; font-weight:500; opacity:.9;}
+  main{padding:16px;}
+  section{display:none;}
+  section.activa{display:block; animation:aparece .18s ease;}
+  @keyframes aparece{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+  h2{font-size:17px; margin:4px 0 14px;}
+  .tarjeta{
+    background:var(--blanco); border-radius:var(--radio); padding:14px;
+    box-shadow:var(--sombra); margin-bottom:12px; border:1px solid var(--gris-claro);
+  }
+  label{display:block; font-size:12px; font-weight:700; color:var(--gris); margin:10px 0 4px;}
+  input,select,textarea{
+    width:100%; padding:12px; border:1.5px solid var(--gris-claro); border-radius:12px;
+    font-size:16px; background:var(--rosa-fondo); color:var(--negro); font-family:inherit;
+  }
+  input:focus,select:focus,textarea:focus{outline:none; border-color:var(--rosa);}
+  textarea{min-height:64px; resize:vertical;}
+  button{
+    font-family:inherit; font-size:15px; font-weight:700; border:none; border-radius:12px;
+    padding:13px 16px; cursor:pointer; transition:transform .05s;
+  }
+  button:active{transform:scale(.97);}
+  .btn-rosa{background:var(--rosa); color:#fff; width:100%;}
+  .btn-linea{background:transparent; color:var(--rosa); border:1.5px solid var(--rosa);}
+  .btn-chico{padding:8px 12px; font-size:13px; width:auto;}
+  .btn-gris{background:var(--gris-claro); color:var(--negro);}
+  .fila{display:flex; gap:8px; align-items:center;}
+  .fila-2{display:flex; gap:10px;}
+  .fila-2>*{flex:1;}
+  .pill{display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:800;}
+  .pill-ok{background:rgba(22,163,74,.15); color:var(--ok);}
+  .pill-pend{background:rgba(220,38,38,.12); color:var(--alerta);}
+  .pill-abon{background:rgba(217,119,6,.15); color:var(--aviso);}
+  .mini{font-size:12px; color:var(--gris);}
+  .precio{font-weight:800; color:var(--rosa);}
+  .sugerido{font-size:13px; margin-top:6px; padding:10px; border-radius:12px; background:var(--rosa-claro);}
+  .sugerido.mal{background:rgba(220,38,38,.12); color:var(--alerta);}
+  .sugerido.bien{background:rgba(22,163,74,.12); color:var(--ok);}
+  .vacio{text-align:center; color:var(--gris); padding:30px 10px; font-size:14px;}
+  .item-lista{display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--gris-claro);}
+  .item-lista:last-child{border-bottom:none;}
+  .item-lista .izq{min-width:0;}
+  .item-lista .nombre{font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  nav{
+    position:fixed; bottom:0; left:0; right:0; max-width:680px; margin:0 auto;
+    background:var(--blanco); display:flex; border-top:1px solid var(--gris-claro);
+    z-index:20; box-shadow:0 -2px 10px rgba(0,0,0,.06);
+  }
+  nav button{
+    flex:1; background:none; border:none; border-radius:0; padding:8px 2px 10px;
+    color:var(--gris); font-size:10px; font-weight:700; display:flex; flex-direction:column; align-items:center; gap:2px;
+  }
+  nav button .ico{font-size:20px;}
+  nav button.activo{color:var(--rosa);}
+  .tablero{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;}
+  .dato{background:var(--blanco); border-radius:var(--radio); padding:14px; box-shadow:var(--sombra); border:1px solid var(--gris-claro);}
+  .dato .num{font-size:24px; font-weight:800; color:var(--rosa);}
+  .dato .etq{font-size:12px; color:var(--gris); font-weight:700;}
+  .dato.alerta .num{color:var(--alerta);}
+  .modal-fondo{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:40; display:none; align-items:flex-end; justify-content:center;}
+  .modal-fondo.abierto{display:flex;}
+  .modal{background:var(--blanco); width:100%; max-width:680px; border-radius:20px 20px 0 0; padding:18px; max-height:92vh; overflow-y:auto; animation:sube .2s ease;}
+  @keyframes sube{from{transform:translateY(100%);} to{transform:none;}}
+  .modal h3{margin:0 0 12px; font-size:18px;}
+  .cerrar{float:right; background:var(--gris-claro); border-radius:999px; width:34px; height:34px; font-size:18px; padding:0; line-height:1;}
+  .carrito-item{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 0; border-bottom:1px dashed var(--gris-claro);}
+  .total-grande{font-size:22px; font-weight:800; text-align:right; margin:10px 0;}
+  .vencido{color:var(--alerta); font-weight:800;}
+  .nota-caja{background:var(--rosa-claro); border-radius:12px; padding:10px 12px; font-size:13px; margin-bottom:12px;}
+  .separador{height:1px; background:var(--gris-claro); margin:14px 0;}
+  .cantidad-ctrl{display:flex; align-items:center; gap:8px;}
+  .cantidad-ctrl button{width:34px; height:34px; padding:0; font-size:18px; background:var(--rosa-claro); color:var(--rosa);}
+</style>
+</head>
+<body>
+<header>
+  <span class="corona">&#128081;</span>
+  <div><h1>Xime Glow</h1><small>Ventas, clientas y ganancias</small></div>
+</header>
+
+<main>
+  <!-- ====== VENDER ====== -->
+  <section id="sec-vender" class="activa">
+    <h2>Registrar venta</h2>
+    <div class="tarjeta">
+      <label>Clienta</label>
+      <div class="fila">
+        <select id="venta-clienta" style="flex:1"></select>
+        <button class="btn-linea btn-chico" id="btn-clienta-rapida" type="button">+ Nueva</button>
+      </div>
+
+      <label>Agregar producto</label>
+      <div class="fila">
+        <select id="venta-producto" style="flex:1"></select>
+        <button class="btn-rosa btn-chico" id="btn-agregar-item" type="button" style="width:auto">Agregar</button>
+      </div>
+
+      <div id="venta-carrito" style="margin-top:12px"></div>
+      <div class="total-grande" id="venta-total" style="display:none">Total: $0</div>
+
+      <div id="venta-pago" style="display:none">
+        <div class="separador"></div>
+        <div class="fila-2">
+          <div>
+            <label>Abono ahora</label>
+            <input type="number" id="venta-abono" inputmode="decimal" placeholder="0" min="0" step="1">
+          </div>
+          <div>
+            <label>Fecha de pago</label>
+            <input type="date" id="venta-fecha-pago">
+          </div>
+        </div>
+        <p class="mini" id="venta-saldo-info"></p>
+        <button class="btn-rosa" id="btn-guardar-venta" type="button" style="margin-top:8px">Guardar venta</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== CLIENTAS ====== -->
+  <section id="sec-clientas">
+    <h2>Mis clientas</h2>
+    <button class="btn-rosa" id="btn-nueva-clienta" type="button" style="margin-bottom:12px">+ Agregar clienta</button>
+    <div id="lista-clientas"></div>
+  </section>
+
+  <!-- ====== PRODUCTOS ====== -->
+  <section id="sec-productos">
+    <h2>Mis productos</h2>
+    <button class="btn-rosa" id="btn-nuevo-producto" type="button" style="margin-bottom:12px">+ Agregar producto</button>
+    <div id="lista-productos"></div>
+  </section>
+
+  <!-- ====== PANEL ====== -->
+  <section id="sec-panel">
+    <h2>Panel</h2>
+    <div class="tablero">
+      <div class="dato"><div class="num" id="panel-ganancia">$0</div><div class="etq">Ganancia (si todo se paga)</div></div>
+      <div class="dato"><div class="num" id="panel-cobrado">$0</div><div class="etq">Cobrado</div></div>
+      <div class="dato alerta"><div class="num" id="panel-fiado">$0</div><div class="etq">Fiado en la calle</div></div>
+      <div class="dato"><div class="num" id="panel-ventas">0</div><div class="etq">Ventas registradas</div></div>
+    </div>
+    <div class="tarjeta">
+      <h3 style="margin:0 0 10px; font-size:15px">Quién me debe</h3>
+      <div id="panel-deudoras"></div>
+    </div>
+    <button class="btn-linea" id="btn-resumen" type="button" style="margin-bottom:10px">Copiar resumen para WhatsApp</button>
+    <div class="fila-2">
+      <button class="btn-gris" id="btn-exportar" type="button">Respaldar</button>
+      <button class="btn-gris" id="btn-importar" type="button">Restaurar</button>
+    </div>
+    <input type="file" id="archivo-importar" accept="application/json" style="display:none">
+  </section>
+
+  <!-- ====== AJUSTES ====== -->
+  <section id="sec-ajustes">
+    <h2>Ajustes de precio</h2>
+    <div class="nota-caja">Estas reglas protegen que Ximena no venda por debajo de tu ganancia. Ella administra los precios; estas reglas las pones tú.</div>
+    <div class="tarjeta">
+      <label>Factor de precio sugerido (sobre el costo)</label>
+      <input type="number" id="cfg-factor" inputmode="decimal" step="0.1" min="1">
+      <p class="mini">Ejemplo: 1.8 significa que un producto de $40 se sugiere en $72.</p>
+      <label>Ganancia mínima obligatoria (% sobre el costo)</label>
+      <input type="number" id="cfg-margen" inputmode="decimal" step="1" min="0">
+      <p class="mini">Por debajo de esto la app no deja guardar el precio.</p>
+      <label>PIN para cambiar estas reglas (opcional)</label>
+      <input type="text" id="cfg-pin" inputmode="numeric" maxlength="6" placeholder="Sin PIN">
+      <p class="mini">Si lo pones, solo quien sepa el PIN puede cambiar las reglas.</p>
+      <button class="btn-rosa" id="btn-guardar-cfg" type="button" style="margin-top:14px">Guardar reglas</button>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button data-sec="vender" class="activo" type="button"><span class="ico">&#128722;</span>Vender</button>
+  <button data-sec="clientas" type="button"><span class="ico">&#128105;</span>Clientas</button>
+  <button data-sec="productos" type="button"><span class="ico">&#128132;</span>Productos</button>
+  <button data-sec="panel" type="button"><span class="ico">&#128202;</span>Panel</button>
+  <button data-sec="ajustes" type="button"><span class="ico">&#9881;</span>Reglas</button>
+</nav>
+
+<div class="modal-fondo" id="modal-fondo"><div class="modal" id="modal-caja"></div></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   Xime Glow — app de ventas offline (Etapa 1)
+   Datos guardados en el propio celular (localStorage).
+   ============================================================ */
+
+const CLAVE_ALMACEN = "ximeGlow_v1";
+
+let estado = {
+  config: { factorSugerido: 1.8, margenMinimoPct: 25, pin: "" },
+  productos: [],
+  clientas: [],
+  ventas: []
+};
+
+let carritoActual = []; // items de la venta en curso
+
+/* ---------- Persistencia ---------- */
+function cargarEstado(){
+  try{
+    const crudo = localStorage.getItem(CLAVE_ALMACEN);
+    if(!crudo) return;
+    const datos = JSON.parse(crudo);
+    if(datos && typeof datos === "object"){
+      estado.config   = Object.assign(estado.config, datos.config || {});
+      estado.productos = Array.isArray(datos.productos) ? datos.productos : [];
+      estado.clientas  = Array.isArray(datos.clientas)  ? datos.clientas  : [];
+      estado.ventas    = Array.isArray(datos.ventas)    ? datos.ventas    : [];
+    }
+  }catch(e){
+    console.error("No se pudo leer el respaldo local:", e);
+    alert("No se pudieron cargar los datos guardados. Se inicia vacío.");
+  }
+}
+
+function guardarEstado(){
+  try{
+    localStorage.setItem(CLAVE_ALMACEN, JSON.stringify(estado));
+  }catch(e){
+    console.error("No se pudo guardar:", e);
+    alert("No se pudo guardar. Revisa el espacio del celular.");
+  }
+}
+
+/* ---------- Utilidades ---------- */
+function generarId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function pesos(n){ const v = Number(n)||0; return "$" + v.toLocaleString("es-MX",{maximumFractionDigits:2}); }
+function redondearBonito(n){ return Math.round((Number(n)||0)/5)*5; }
+function hoyISO(){ return new Date().toISOString().slice(0,10); }
+
+function precioSugerido(costo){ return redondearBonito((Number(costo)||0) * (Number(estado.config.factorSugerido)||1)); }
+function precioPiso(costo){ return Math.ceil((Number(costo)||0) * (1 + (Number(estado.config.margenMinimoPct)||0)/100)); }
+
+function buscarProducto(id){ return estado.productos.find(p => p.id === id) || null; }
+function buscarClienta(id){ return estado.clientas.find(c => c.id === id) || null; }
+
+function totalVenta(v){ return (v.items||[]).reduce((s,i)=> s + i.cantidad * i.precioUnit, 0); }
+function costoVenta(v){ return (v.items||[]).reduce((s,i)=> s + i.cantidad * i.costoUnit, 0); }
+function gananciaVenta(v){ return totalVenta(v) - costoVenta(v); }
+function abonadoVenta(v){ return (v.abonos||[]).reduce((s,a)=> s + (Number(a.monto)||0), 0); }
+function saldoVenta(v){ return Math.max(0, totalVenta(v) - abonadoVenta(v)); }
+function saldoClienta(id){ return estado.ventas.filter(v=>v.clientaId===id).reduce((s,v)=> s + saldoVenta(v), 0); }
+
+function debounce(fn, ms){
+  let t; return function(...args){ clearTimeout(t); t = setTimeout(()=>fn.apply(this,args), ms); };
+}
+
+/* ---------- Navegación ---------- */
+function mostrarSeccion(nombre){
+  document.querySelectorAll("section").forEach(s => s.classList.remove("activa"));
+  const sec = document.getElementById("sec-"+nombre);
+  if(sec) sec.classList.add("activa");
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("activo", b.dataset.sec===nombre));
+  if(nombre==="clientas") renderClientas();
+  if(nombre==="productos") renderProductos();
+  if(nombre==="panel") renderPanel();
+  if(nombre==="ajustes") renderAjustes();
+  if(nombre==="vender") renderVender();
+}
+document.querySelectorAll("nav button").forEach(b=>{
+  b.addEventListener("click", ()=> mostrarSeccion(b.dataset.sec));
+});
+
+/* ---------- Modal ---------- */
+function abrirModal(html){
+  const caja = document.getElementById("modal-caja");
+  caja.innerHTML = '<button class="cerrar" type="button" onclick="cerrarModal()">&times;</button>' + html;
+  document.getElementById("modal-fondo").classList.add("abierto");
+}
+function cerrarModal(){ document.getElementById("modal-fondo").classList.remove("abierto"); }
+document.getElementById("modal-fondo").addEventListener("click", e=>{
+  if(e.target.id==="modal-fondo") cerrarModal();
+});
+
+/* ============================================================
+   PRODUCTOS
+   ============================================================ */
+function renderProductos(){
+  const cont = document.getElementById("lista-productos");
+  if(!estado.productos.length){
+    cont.innerHTML = '<div class="vacio">Aún no hay productos. Agrega lo que compraste para empezar a ponerle precio.</div>';
+    return;
+  }
+  cont.innerHTML = estado.productos.map(p=>{
+    const g = p.precio - p.costo;
+    return `<div class="tarjeta">
+      <div class="item-lista" style="border:none; padding:0">
+        <div class="izq">
+          <div class="nombre">${escapar(p.nombre)}</div>
+          <div class="mini">${escapar(p.categoria||"Sin categoría")} · costo ${pesos(p.costo)}${p.stock!=null?" · stock "+p.stock:""}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="precio">${pesos(p.precio)}</div>
+          <div class="mini">gana ${pesos(g)}</div>
+        </div>
+      </div>
+      <div class="fila" style="margin-top:10px; gap:8px">
+        <button class="btn-gris btn-chico" type="button" onclick="formProducto('${p.id}')">Editar</button>
+        <button class="btn-gris btn-chico" type="button" onclick="borrarProducto('${p.id}')">Borrar</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function formProducto(id){
+  const p = id ? buscarProducto(id) : null;
+  abrirModal(`
+    <h3>${p?"Editar":"Nuevo"} producto</h3>
+    <label>Nombre</label>
+    <input id="f-nombre" value="${p?escapar(p.nombre):""}" placeholder="Ej. Gloss Chicle">
+    <label>Categoría</label>
+    <input id="f-categoria" value="${p?escapar(p.categoria||""):""}" placeholder="Ej. Labios">
+    <div class="fila-2">
+      <div><label>¿Cuánto te costó?</label><input id="f-costo" type="number" inputmode="decimal" min="0" step="1" value="${p?p.costo:""}"></div>
+      <div><label>Stock (opcional)</label><input id="f-stock" type="number" inputmode="numeric" min="0" step="1" value="${p&&p.stock!=null?p.stock:""}"></div>
+    </div>
+    <label>Precio de venta</label>
+    <input id="f-precio" type="number" inputmode="decimal" min="0" step="1" value="${p?p.precio:""}">
+    <div id="f-sugerido" class="sugerido"></div>
+    <button class="btn-rosa" type="button" style="margin-top:14px" onclick="guardarProducto('${id||""}')">Guardar</button>
+  `);
+  const inCosto = document.getElementById("f-costo");
+  const inPrecio = document.getElementById("f-precio");
+  const refrescar = ()=> pintarSugerido(inCosto.value, inPrecio.value);
+  inCosto.addEventListener("input", debounce(()=>{
+    if(!inPrecio.value) inPrecio.value = precioSugerido(inCosto.value) || "";
+    refrescar();
+  }, 250));
+  inPrecio.addEventListener("input", debounce(refrescar, 200));
+  refrescar();
+}
+
+function pintarSugerido(costo, precio){
+  const caja = document.getElementById("f-sugerido");
+  if(!caja) return;
+  costo = Number(costo)||0; precio = Number(precio)||0;
+  if(costo<=0){ caja.className="sugerido"; caja.textContent="Pon primero cuánto te costó."; return; }
+  const sug = precioSugerido(costo), piso = precioPiso(costo);
+  if(precio<=0){ caja.className="sugerido"; caja.innerHTML=`Precio sugerido: <b>${pesos(sug)}</b> · mínimo permitido: <b>${pesos(piso)}</b>`; return; }
+  if(precio < piso){ caja.className="sugerido mal"; caja.innerHTML=`⚠ Muy bajo. Con ese precio no llegas a tu ganancia mínima. Mínimo: <b>${pesos(piso)}</b>`; return; }
+  caja.className="sugerido bien";
+  caja.innerHTML=`✓ Ganancia por pieza: <b>${pesos(precio-costo)}</b> · sugerido ${pesos(sug)}`;
+}
+
+function guardarProducto(id){
+  const nombre = document.getElementById("f-nombre").value.trim();
+  const categoria = document.getElementById("f-categoria").value.trim();
+  const costo = Number(document.getElementById("f-costo").value);
+  const precio = Number(document.getElementById("f-precio").value);
+  const stockTxt = document.getElementById("f-stock").value.trim();
+  const stock = stockTxt==="" ? null : Math.max(0, Math.floor(Number(stockTxt)||0));
+
+  if(!nombre){ alert("Ponle nombre al producto."); return; }
+  if(!(costo>0)){ alert("Pon cuánto te costó (mayor a 0)."); return; }
+  if(!(precio>0)){ alert("Pon el precio de venta."); return; }
+  if(precio < precioPiso(costo)){
+    alert("Ese precio deja menos de tu ganancia mínima. Mínimo: "+pesos(precioPiso(costo)));
+    return;
+  }
+  if(id){
+    const p = buscarProducto(id);
+    if(p) Object.assign(p, {nombre, categoria, costo, precio, stock});
+  }else{
+    estado.productos.push({id:generarId(), nombre, categoria, costo, precio, stock, creado:hoyISO()});
+  }
+  guardarEstado(); cerrarModal(); renderProductos();
+}
+
+function borrarProducto(id){
+  if(!confirm("¿Borrar este producto? No afecta las ventas ya registradas.")) return;
+  estado.productos = estado.productos.filter(p=>p.id!==id);
+  guardarEstado(); renderProductos();
+}
+
+/* ============================================================
+   CLIENTAS
+   ============================================================ */
+function renderClientas(){
+  const cont = document.getElementById("lista-clientas");
+  if(!estado.clientas.length){
+    cont.innerHTML = '<div class="vacio">Aún no hay clientas. Agrega a tus amigas para llevar qué les gusta y qué te deben.</div>';
+    return;
+  }
+  const ordenadas = [...estado.clientas].sort((a,b)=> saldoClienta(b.id)-saldoClienta(a.id));
+  cont.innerHTML = ordenadas.map(c=>{
+    const saldo = saldoClienta(c.id);
+    const compras = estado.ventas.filter(v=>v.clientaId===c.id).length;
+    return `<div class="tarjeta" onclick="verClienta('${c.id}')" style="cursor:pointer">
+      <div class="item-lista" style="border:none; padding:0">
+        <div class="izq">
+          <div class="nombre">${escapar(c.nombre)}</div>
+          <div class="mini">${compras} compra(s)${c.notas?" · "+escapar(c.notas):""}</div>
+        </div>
+        <div style="text-align:right">
+          ${saldo>0 ? `<span class="pill pill-pend">debe ${pesos(saldo)}</span>` : `<span class="pill pill-ok">al día</span>`}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function formClienta(id, volverAVenta){
+  const c = id ? buscarClienta(id) : null;
+  abrirModal(`
+    <h3>${c?"Editar":"Nueva"} clienta</h3>
+    <label>Nombre</label>
+    <input id="c-nombre" value="${c?escapar(c.nombre):""}" placeholder="Ej. Sofía 2°B">
+    <label>Gustos / notas (qué le gusta, tonos, etc.)</label>
+    <textarea id="c-notas" placeholder="Ej. le gustan los gloss rosas, busca corrector claro">${c?escapar(c.notas||""):""}</textarea>
+    <button class="btn-rosa" type="button" style="margin-top:14px" onclick="guardarClienta('${id||""}', ${volverAVenta?"true":"false"})">Guardar</button>
+  `);
+}
+
+function guardarClienta(id, volverAVenta){
+  const nombre = document.getElementById("c-nombre").value.trim();
+  const notas = document.getElementById("c-notas").value.trim();
+  if(!nombre){ alert("Ponle nombre a la clienta."); return; }
+  let nuevaId = id;
+  if(id){
+    const c = buscarClienta(id); if(c) Object.assign(c, {nombre, notas});
+  }else{
+    nuevaId = generarId();
+    estado.clientas.push({id:nuevaId, nombre, notas, creado:hoyISO()});
+  }
+  guardarEstado(); cerrarModal();
+  if(volverAVenta){ renderVender(); document.getElementById("venta-clienta").value = nuevaId; }
+  else renderClientas();
+}
+
+function verClienta(id){
+  const c = buscarClienta(id); if(!c) return;
+  const ventas = estado.ventas.filter(v=>v.clientaId===id).sort((a,b)=> b.fecha.localeCompare(a.fecha));
+  const saldo = saldoClienta(id);
+  const historial = ventas.map(v=>{
+    const s = saldoVenta(v);
+    const prods = v.items.map(i=>`${i.cantidad}× ${escapar(i.nombre)}`).join(", ");
+    const estadoP = s<=0 ? '<span class="pill pill-ok">pagado</span>'
+      : (abonadoVenta(v)>0 ? `<span class="pill pill-abon">debe ${pesos(s)}</span>` : `<span class="pill pill-pend">debe ${pesos(s)}</span>`);
+    const vencido = s>0 && v.fechaCompromiso && v.fechaCompromiso < hoyISO();
+    return `<div class="item-lista">
+      <div class="izq">
+        <div class="nombre" style="white-space:normal">${prods}</div>
+        <div class="mini">${v.fecha} · total ${pesos(totalVenta(v))}${v.fechaCompromiso?` · pagar ${v.fechaCompromiso}`:""} ${vencido?'<span class="vencido">¡vencido!</span>':""}</div>
+      </div>
+      <div style="text-align:right">${estadoP}${s>0?`<br><button class="btn-rosa btn-chico" style="margin-top:6px" type="button" onclick="formAbono('${v.id}')">Abonar</button>`:""}</div>
+    </div>`;
+  }).join("") || '<div class="vacio">Sin compras todavía.</div>';
+
+  abrirModal(`
+    <h3>${escapar(c.nombre)}</h3>
+    ${c.notas?`<div class="nota-caja">💡 ${escapar(c.notas)}</div>`:""}
+    <div class="fila-2" style="margin-bottom:6px">
+      <div class="dato"><div class="num" style="font-size:20px">${pesos(saldo)}</div><div class="etq">Me debe</div></div>
+      <div class="dato"><div class="num" style="font-size:20px">${ventas.length}</div><div class="etq">Compras</div></div>
+    </div>
+    <div class="fila" style="gap:8px; margin:10px 0">
+      <button class="btn-linea btn-chico" type="button" onclick="formClienta('${id}', false)">Editar</button>
+      <button class="btn-gris btn-chico" type="button" onclick="borrarClienta('${id}')">Borrar</button>
+    </div>
+    <div class="separador"></div>
+    <h3 style="font-size:15px">Lo que le has vendido</h3>
+    ${historial}
+  `);
+}
+
+function borrarClienta(id){
+  const tiene = estado.ventas.some(v=>v.clientaId===id);
+  if(tiene){ alert("Esta clienta tiene ventas registradas. No se puede borrar para no perder el historial."); return; }
+  if(!confirm("¿Borrar esta clienta?")) return;
+  estado.clientas = estado.clientas.filter(c=>c.id!==id);
+  guardarEstado(); cerrarModal(); renderClientas();
+}
+
+/* ---------- Abonos ---------- */
+function formAbono(ventaId){
+  const v = estado.ventas.find(x=>x.id===ventaId); if(!v) return;
+  const s = saldoVenta(v);
+  abrirModal(`
+    <h3>Registrar abono</h3>
+    <p class="mini">Saldo actual: <b>${pesos(s)}</b></p>
+    <label>¿Cuánto abona?</label>
+    <input id="ab-monto" type="number" inputmode="decimal" min="0" max="${s}" step="1" placeholder="0">
+    <button class="btn-rosa" type="button" style="margin-top:14px" onclick="guardarAbono('${ventaId}')">Guardar abono</button>
+  `);
+}
+function guardarAbono(ventaId){
+  const v = estado.ventas.find(x=>x.id===ventaId); if(!v) return;
+  const monto = Number(document.getElementById("ab-monto").value);
+  if(!(monto>0)){ alert("Pon un abono mayor a 0."); return; }
+  if(monto > saldoVenta(v)){ alert("El abono es mayor que lo que debe."); return; }
+  if(!v.abonos) v.abonos=[];
+  v.abonos.push({fecha:hoyISO(), monto});
+  guardarEstado(); cerrarModal();
+  verClienta(v.clientaId); renderPanel();
+}
+
+/* ============================================================
+   VENDER
+   ============================================================ */
+function renderVender(){
+  const selC = document.getElementById("venta-clienta");
+  const selP = document.getElementById("venta-producto");
+  selC.innerHTML = '<option value="">Elige clienta…</option>' +
+    estado.clientas.map(c=>`<option value="${c.id}">${escapar(c.nombre)}</option>`).join("");
+  selP.innerHTML = '<option value="">Elige producto…</option>' +
+    estado.productos.map(p=>`<option value="${p.id}">${escapar(p.nombre)} · ${pesos(p.precio)}</option>`).join("");
+  pintarCarrito();
+}
+
+document.getElementById("btn-clienta-rapida").addEventListener("click", ()=> formClienta("", true));
+document.getElementById("btn-agregar-item").addEventListener("click", ()=>{
+  const id = document.getElementById("venta-producto").value;
+  const p = buscarProducto(id);
+  if(!p){ alert("Elige un producto."); return; }
+  const existe = carritoActual.find(i=>i.productoId===id);
+  if(existe){ existe.cantidad++; }
+  else carritoActual.push({productoId:id, nombre:p.nombre, cantidad:1, precioUnit:p.precio, costoUnit:p.costo});
+  pintarCarrito();
+});
+
+function cambiarCantidad(productoId, delta){
+  const i = carritoActual.find(x=>x.productoId===productoId); if(!i) return;
+  i.cantidad += delta;
+  if(i.cantidad<=0) carritoActual = carritoActual.filter(x=>x.productoId!==productoId);
+  pintarCarrito();
+}
+function cambiarPrecioItem(productoId, valor){
+  const i = carritoActual.find(x=>x.productoId===productoId); if(!i) return;
+  const nuevo = Number(valor)||0;
+  if(nuevo < i.costoUnit){
+    alert("Ese precio está por debajo del costo ("+pesos(i.costoUnit)+"). No puedes vender perdiendo.");
+    pintarCarrito(); return;
+  }
+  i.precioUnit = nuevo;
+  pintarCarrito();
+}
+
+function pintarCarrito(){
+  const cont = document.getElementById("venta-carrito");
+  const divTotal = document.getElementById("venta-total");
+  const divPago = document.getElementById("venta-pago");
+  if(!carritoActual.length){
+    cont.innerHTML = '<div class="vacio" style="padding:16px">Agrega productos a la venta.</div>';
+    divTotal.style.display="none"; divPago.style.display="none"; return;
+  }
+  cont.innerHTML = carritoActual.map(i=>`
+    <div class="carrito-item">
+      <div style="flex:1; min-width:0">
+        <div class="nombre">${escapar(i.nombre)}</div>
+        <div class="fila" style="gap:6px; margin-top:4px">
+          <span class="mini">$</span>
+          <input type="number" value="${i.precioUnit}" min="${i.costoUnit}" step="1" inputmode="decimal"
+            style="width:80px; padding:6px" onchange="cambiarPrecioItem('${i.productoId}', this.value)">
+          <span class="mini">c/u</span>
+        </div>
+      </div>
+      <div class="cantidad-ctrl">
+        <button type="button" onclick="cambiarCantidad('${i.productoId}',-1)">−</button>
+        <b>${i.cantidad}</b>
+        <button type="button" onclick="cambiarCantidad('${i.productoId}',1)">+</button>
+      </div>
+    </div>`).join("");
+  const total = carritoActual.reduce((s,i)=> s + i.cantidad*i.precioUnit, 0);
+  divTotal.style.display="block"; divTotal.textContent = "Total: "+pesos(total);
+  divPago.style.display="block";
+  document.getElementById("venta-fecha-pago").value = document.getElementById("venta-fecha-pago").value || hoyISO();
+  actualizarSaldoInfo();
+}
+
+const actualizarSaldoInfo = ()=>{
+  const total = carritoActual.reduce((s,i)=> s + i.cantidad*i.precioUnit, 0);
+  const abono = Number(document.getElementById("venta-abono").value)||0;
+  const saldo = Math.max(0, total-abono);
+  const info = document.getElementById("venta-saldo-info");
+  if(abono>total){ info.innerHTML = '<span class="vencido">El abono es mayor que el total.</span>'; }
+  else if(saldo>0){ info.innerHTML = `Queda a deber: <b>${pesos(saldo)}</b> (fiado)`; }
+  else{ info.innerHTML = '<span style="color:var(--ok);font-weight:700">Pagado completo ✓</span>'; }
+};
+document.getElementById("venta-abono").addEventListener("input", debounce(actualizarSaldoInfo, 150));
+
+document.getElementById("btn-guardar-venta").addEventListener("click", ()=>{
+  const clientaId = document.getElementById("venta-clienta").value;
+  if(!clientaId){ alert("Elige la clienta."); return; }
+  if(!carritoActual.length){ alert("Agrega productos."); return; }
+  const total = carritoActual.reduce((s,i)=> s + i.cantidad*i.precioUnit, 0);
+  const abono = Number(document.getElementById("venta-abono").value)||0;
+  if(abono>total){ alert("El abono no puede ser mayor que el total."); return; }
+  const fechaPago = document.getElementById("venta-fecha-pago").value || hoyISO();
+
+  const venta = {
+    id:generarId(), clientaId, fecha:hoyISO(),
+    items: carritoActual.map(i=>({productoId:i.productoId, nombre:i.nombre, cantidad:i.cantidad, precioUnit:i.precioUnit, costoUnit:i.costoUnit})),
+    abonos: abono>0 ? [{fecha:hoyISO(), monto:abono}] : [],
+    fechaCompromiso: (total-abono)>0 ? fechaPago : ""
+  };
+  // descontar stock si se lleva
+  venta.items.forEach(it=>{
+    const p = buscarProducto(it.productoId);
+    if(p && p.stock!=null) p.stock = Math.max(0, p.stock - it.cantidad);
+  });
+  estado.ventas.push(venta);
+  guardarEstado();
+  carritoActual = [];
+  document.getElementById("venta-abono").value = "";
+  document.getElementById("venta-clienta").value = "";
+  renderVender();
+  alert("Venta guardada ✓");
+});
+
+/* ============================================================
+   PANEL
+   ============================================================ */
+function renderPanel(){
+  const ganancia = estado.ventas.reduce((s,v)=> s + gananciaVenta(v), 0);
+  const cobrado = estado.ventas.reduce((s,v)=> s + abonadoVenta(v), 0);
+  const fiado = estado.ventas.reduce((s,v)=> s + saldoVenta(v), 0);
+  document.getElementById("panel-ganancia").textContent = pesos(ganancia);
+  document.getElementById("panel-cobrado").textContent = pesos(cobrado);
+  document.getElementById("panel-fiado").textContent = pesos(fiado);
+  document.getElementById("panel-ventas").textContent = estado.ventas.length;
+
+  const deudoras = estado.clientas
+    .map(c=>({c, saldo:saldoClienta(c.id)}))
+    .filter(x=>x.saldo>0)
+    .sort((a,b)=> b.saldo-a.saldo);
+  const cont = document.getElementById("panel-deudoras");
+  if(!deudoras.length){ cont.innerHTML = '<div class="mini">Nadie te debe. ¡Vas al día! 💖</div>'; return; }
+  cont.innerHTML = deudoras.map(({c,saldo})=>{
+    const venc = estado.ventas.some(v=>v.clientaId===c.id && saldoVenta(v)>0 && v.fechaCompromiso && v.fechaCompromiso<hoyISO());
+    return `<div class="item-lista">
+      <div class="izq"><div class="nombre">${escapar(c.nombre)}</div>${venc?'<div class="mini vencido">tiene pago vencido</div>':""}</div>
+      <div class="precio">${pesos(saldo)}</div>
+    </div>`;
+  }).join("");
+}
+
+/* ---------- Respaldo / resumen ---------- */
+document.getElementById("btn-resumen").addEventListener("click", ()=>{
+  const ganancia = estado.ventas.reduce((s,v)=> s + gananciaVenta(v), 0);
+  const fiado = estado.ventas.reduce((s,v)=> s + saldoVenta(v), 0);
+  const cobrado = estado.ventas.reduce((s,v)=> s + abonadoVenta(v), 0);
+  const deudoras = estado.clientas.map(c=>({c,saldo:saldoClienta(c.id)})).filter(x=>x.saldo>0).sort((a,b)=>b.saldo-a.saldo);
+  let txt = `✨ Xime Glow — resumen ${hoyISO()}\n`;
+  txt += `Ventas: ${estado.ventas.length}\n`;
+  txt += `Ganancia (si todo se paga): ${pesos(ganancia)}\n`;
+  txt += `Cobrado: ${pesos(cobrado)}\n`;
+  txt += `Fiado en la calle: ${pesos(fiado)}\n`;
+  if(deudoras.length){
+    txt += `\nQuién me debe:\n` + deudoras.map(d=>`• ${d.c.nombre}: ${pesos(d.saldo)}`).join("\n");
+  }
+  copiarTexto(txt);
+});
+
+function copiarTexto(txt){
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(
+        ()=> alert("Resumen copiado. Pégalo en WhatsApp."),
+        ()=> fallbackCopiar(txt)
+      );
+    } else fallbackCopiar(txt);
+  }catch(e){ fallbackCopiar(txt); }
+}
+function fallbackCopiar(txt){
+  const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand("copy"); alert("Resumen copiado. Pégalo en WhatsApp."); }
+  catch(e){ alert(txt); }
+  document.body.removeChild(ta);
+}
+
+document.getElementById("btn-exportar").addEventListener("click", ()=>{
+  try{
+    const blob = new Blob([JSON.stringify(estado,null,2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href=url; a.download = "ximeglow-respaldo-"+hoyISO()+".json";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }catch(e){ alert("No se pudo respaldar: "+e.message); }
+});
+document.getElementById("btn-importar").addEventListener("click", ()=> document.getElementById("archivo-importar").click());
+document.getElementById("archivo-importar").addEventListener("change", e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const lector = new FileReader();
+  lector.onload = ev=>{
+    try{
+      const datos = JSON.parse(ev.target.result);
+      if(!datos || typeof datos!=="object") throw new Error("Archivo inválido");
+      if(!confirm("Esto reemplaza los datos actuales por los del respaldo. ¿Continuar?")) return;
+      estado.config = Object.assign({factorSugerido:1.8,margenMinimoPct:25,pin:""}, datos.config||{});
+      estado.productos = Array.isArray(datos.productos)?datos.productos:[];
+      estado.clientas = Array.isArray(datos.clientas)?datos.clientas:[];
+      estado.ventas = Array.isArray(datos.ventas)?datos.ventas:[];
+      guardarEstado(); renderPanel();
+      alert("Respaldo restaurado ✓");
+    }catch(err){ alert("No se pudo leer el archivo: "+err.message); }
+  };
+  lector.readAsText(f);
+  e.target.value="";
+});
+
+/* ============================================================
+   AJUSTES (reglas de precio)
+   ============================================================ */
+function renderAjustes(){
+  if(estado.config.pin){
+    const intento = prompt("PIN para ver/cambiar las reglas de precio:");
+    if(intento !== estado.config.pin){
+      alert("PIN incorrecto.");
+      mostrarSeccion("vender");
+      return;
+    }
+  }
+  document.getElementById("cfg-factor").value = estado.config.factorSugerido;
+  document.getElementById("cfg-margen").value = estado.config.margenMinimoPct;
+  document.getElementById("cfg-pin").value = estado.config.pin || "";
+}
+document.getElementById("btn-guardar-cfg").addEventListener("click", ()=>{
+  const factor = Number(document.getElementById("cfg-factor").value);
+  const margen = Number(document.getElementById("cfg-margen").value);
+  const pin = document.getElementById("cfg-pin").value.trim();
+  if(!(factor>=1)){ alert("El factor debe ser 1 o más."); return; }
+  if(!(margen>=0)){ alert("La ganancia mínima no puede ser negativa."); return; }
+  estado.config.factorSugerido = factor;
+  estado.config.margenMinimoPct = margen;
+  estado.config.pin = pin;
+  guardarEstado();
+  alert("Reglas guardadas ✓");
+});
+
+/* ---------- Seguridad texto ---------- */
+function escapar(s){
+  return String(s==null?"":s).replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+}
+
+/* ---------- Arranque ---------- */
+cargarEstado();
+renderVender();
+</script>
+</body>
+</html>
+
