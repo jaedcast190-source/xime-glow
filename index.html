@@ -114,6 +114,14 @@
   .sel-fila{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--gris-claro);}
   .sel-fila img{width:38px;height:38px;border-radius:8px;object-fit:cover;flex:none;}
   .sel-fila .ph{width:38px;height:38px;border-radius:8px;background:var(--rosa-claro);display:flex;align-items:center;justify-content:center;flex:none;}
+  .cat-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+  .chip{flex:none;padding:8px 14px;border-radius:999px;background:var(--blanco);border:1.5px solid var(--gris-claro);color:var(--negro);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .chip.activo{background:var(--rosa);color:#fff;border-color:var(--rosa)}
+  .cat-card .tag{display:inline-block;font-size:10px;font-weight:800;color:var(--rosa);background:var(--rosa-claro);padding:2px 8px;border-radius:999px;margin-bottom:4px}
+  .cat-card .corazon{position:absolute;top:8px;right:8px;font-size:16px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.2))}
+  .cat-card{position:relative}
+  .cat-card .agotado{position:absolute;top:8px;left:8px;background:var(--alerta);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px}
 </style>
 </head>
 <body>
@@ -180,8 +188,20 @@
 
   <!-- ====== CATÁLOGO ====== -->
   <section id="sec-catalogo">
-    <h2>Cat&aacute;logo</h2>
-    <button class="btn-rosa" id="btn-post-ig" type="button" style="margin-bottom:12px">&#128248; Crear post para Instagram</button>
+    <div class="cat-head">
+      <h2 style="margin:0">&#128132; Cat&aacute;logo <span id="cat-conteo" class="mini"></span></h2>
+      <button class="btn-rosa btn-chico" id="btn-post-ig" type="button" style="width:auto">&#128248; Post IG</button>
+    </div>
+    <input type="search" id="cat-buscar" placeholder="&#128269; Buscar producto…" style="margin:10px 0 8px">
+    <div id="cat-chips" class="chips"></div>
+    <div class="fila" style="gap:8px;margin:8px 0 4px">
+      <select id="cat-orden" style="flex:1">
+        <option value="nombre">Ordenar: Nombre (A-Z)</option>
+        <option value="precio-asc">Precio: menor a mayor</option>
+        <option value="precio-desc">Precio: mayor a menor</option>
+        <option value="nuevos">M&aacute;s nuevos</option>
+      </select>
+    </div>
     <div id="lista-catalogo"></div>
   </section>
 
@@ -832,21 +852,70 @@ function escapar(s){
 /* ============================================================
    CATÁLOGO + POST DE INSTAGRAM
    ============================================================ */
+var catFiltro = "Todas";
+var catBusqueda = "";
+var catOrden = "nombre";
+
+function categoriasUnicas(){
+  const set = new Set();
+  estado.productos.forEach(p=>{ if(p.categoria) set.add(p.categoria); });
+  return ["Todas", ...Array.from(set).sort((a,b)=>a.localeCompare(b))];
+}
+
 function renderCatalogo(){
   const cont = document.getElementById("lista-catalogo");
+  const conteo = document.getElementById("cat-conteo");
+
   if(!estado.productos.length){
-    cont.innerHTML = '<div class="vacio">Aún no hay productos. Agrega algunos (con foto) para armar tu catálogo.</div>';
+    document.getElementById("cat-chips").innerHTML = "";
+    conteo.textContent = "";
+    cont.innerHTML = '<div class="vacio">Aún no hay productos. Ve a <b>Productos → + Agregar producto</b> para llenar tu catálogo.</div>';
     return;
   }
-  cont.innerHTML = '<div class="grid-cat">' + estado.productos.map(p=>`
-    <div class="cat-card">
+
+  // chips de categoría
+  const cats = categoriasUnicas();
+  document.getElementById("cat-chips").innerHTML = cats.map(c=>
+    `<div class="chip ${c===catFiltro?"activo":""}" onclick="filtrarCat('${escaparAttr(c)}')">${escapar(c)}</div>`
+  ).join("");
+
+  // filtrar
+  let lista = estado.productos.slice();
+  if(catFiltro!=="Todas") lista = lista.filter(p=> (p.categoria||"")===catFiltro);
+  if(catBusqueda){
+    const q = catBusqueda.toLowerCase();
+    lista = lista.filter(p=> (p.nombre||"").toLowerCase().includes(q) || (p.categoria||"").toLowerCase().includes(q));
+  }
+  // ordenar
+  if(catOrden==="nombre") lista.sort((a,b)=> (a.nombre||"").localeCompare(b.nombre||""));
+  else if(catOrden==="precio-asc") lista.sort((a,b)=> a.precio-b.precio);
+  else if(catOrden==="precio-desc") lista.sort((a,b)=> b.precio-a.precio);
+  else if(catOrden==="nuevos") lista.reverse();
+
+  conteo.textContent = "(" + lista.length + ")";
+
+  if(!lista.length){
+    cont.innerHTML = '<div class="vacio">Nada coincide con tu búsqueda.</div>';
+    return;
+  }
+
+  cont.innerHTML = '<div class="grid-cat">' + lista.map(p=>{
+    const agotado = (p.stock!=null && p.stock<=0);
+    return `<div class="cat-card">
+      <span class="corazon">&#128150;</span>
+      ${agotado?'<span class="agotado">Agotado</span>':""}
       <div class="foto">${p.imagen?`<img src="${p.imagen}">`:"&#128132;"}</div>
       <div class="info">
+        ${p.categoria?`<span class="tag">${escapar(p.categoria)}</span>`:""}
         <div class="nom">${escapar(p.nombre)}</div>
         <div class="pre">${pesos(p.precio)}</div>
       </div>
-    </div>`).join("") + '</div>';
+    </div>`;
+  }).join("") + '</div>';
 }
+
+function filtrarCat(c){ catFiltro = c; renderCatalogo(); }
+function escaparAttr(s){ return String(s==null?"":s).replace(/'/g,"\\'").replace(/"/g,"&quot;"); }
 
 let seleccionIG = [];
 
@@ -1106,6 +1175,8 @@ function salirDemo(){
 document.getElementById("btn-demo").addEventListener("click", entrarDemo);
 document.getElementById("btn-salir-demo").addEventListener("click", salirDemo);
 document.getElementById("btn-post-ig").addEventListener("click", abrirSelectorIG);
+document.getElementById("cat-buscar").addEventListener("input", debounce(function(){ catBusqueda = this.value.trim(); renderCatalogo(); }, 200));
+document.getElementById("cat-orden").addEventListener("change", function(){ catOrden = this.value; renderCatalogo(); });
 
 /* ---------- Arranque ---------- */
 cargarEstado();
