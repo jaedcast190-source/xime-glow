@@ -203,6 +203,9 @@
       <label>PIN para cambiar estas reglas (opcional)</label>
       <input type="text" id="cfg-pin" inputmode="numeric" maxlength="6" placeholder="Sin PIN">
       <p class="mini">Si lo pones, solo quien sepa el PIN puede cambiar las reglas.</p>
+      <label>URL del servidor de fotos (Render)</label>
+      <input type="text" id="cfg-url-fotos" inputmode="url" placeholder="https://xime-glow-fotos.onrender.com">
+      <p class="mini">Pega aquí la direcci&oacute;n de tu servidor de Render para mejorar las fotos. D&eacute;jalo vac&iacute;o si a&uacute;n no lo tienes.</p>
       <button class="btn-rosa" id="btn-guardar-cfg" type="button" style="margin-top:14px">Guardar reglas</button>
     </div>
   </section>
@@ -229,7 +232,7 @@
 const CLAVE_ALMACEN = "ximeGlow_v1";
 
 let estado = {
-  config: { factorSugerido: 1.8, margenMinimoPct: 25, pin: "" },
+  config: { factorSugerido: 1.8, margenMinimoPct: 25, pin: "", urlFotos: "" },
   productos: [],
   clientas: [],
   ventas: []
@@ -339,9 +342,12 @@ function renderProductos(){
     const g = p.precio - p.costo;
     return `<div class="tarjeta">
       <div class="item-lista" style="border:none; padding:0">
-        <div class="izq">
-          <div class="nombre">${escapar(p.nombre)}</div>
-          <div class="mini">${escapar(p.categoria||"Sin categoría")} · costo ${pesos(p.costo)}${p.stock!=null?" · stock "+p.stock:""}</div>
+        <div class="fila" style="gap:10px; min-width:0">
+          <div style="width:48px;height:48px;border-radius:10px;overflow:hidden;background:var(--rosa-claro);flex:none;display:flex;align-items:center;justify-content:center;font-size:20px">${p.imagen?`<img src="${p.imagen}" style="width:100%;height:100%;object-fit:cover">`:"&#128132;"}</div>
+          <div class="izq">
+            <div class="nombre">${escapar(p.nombre)}</div>
+            <div class="mini">${escapar(p.categoria||"Sin categoría")} · costo ${pesos(p.costo)}${p.stock!=null?" · stock "+p.stock:""}</div>
+          </div>
         </div>
         <div style="text-align:right">
           <div class="precio">${pesos(p.precio)}</div>
@@ -371,6 +377,13 @@ function formProducto(id){
     <label>Precio de venta</label>
     <input id="f-precio" type="number" inputmode="decimal" min="0" step="1" value="${p?p.precio:""}">
     <div id="f-sugerido" class="sugerido"></div>
+    <label>Foto del producto</label>
+    <div class="fila" style="gap:8px">
+      <div id="f-foto-preview" style="width:64px;height:64px;border-radius:12px;background:var(--rosa-claro);overflow:hidden;flex:none;display:flex;align-items:center;justify-content:center;font-size:24px">${p&&p.imagen?`<img src="${p.imagen}" style="width:100%;height:100%;object-fit:cover">`:"&#128247;"}</div>
+      <button class="btn-linea btn-chico" type="button" id="f-btn-foto" style="flex:1">Tomar / elegir foto</button>
+    </div>
+    <input type="file" id="f-foto-archivo" accept="image/*" capture="environment" style="display:none">
+    <div class="mini" id="f-foto-estado" style="margin-top:4px"></div>
     <button class="btn-rosa" type="button" style="margin-top:14px" onclick="guardarProducto('${id||""}')">Guardar</button>
   `);
   const inCosto = document.getElementById("f-costo");
@@ -382,6 +395,13 @@ function formProducto(id){
   }, 250));
   inPrecio.addEventListener("input", debounce(refrescar, 200));
   refrescar();
+
+  // --- Foto del producto ---
+  fotoProductoTemp = (p && p.imagen) ? p.imagen : null;
+  const btnFoto = document.getElementById("f-btn-foto");
+  const inFoto = document.getElementById("f-foto-archivo");
+  btnFoto.addEventListener("click", ()=> inFoto.click());
+  inFoto.addEventListener("change", e=> procesarFotoProducto(e));
 }
 
 function pintarSugerido(costo, precio){
@@ -413,9 +433,9 @@ function guardarProducto(id){
   }
   if(id){
     const p = buscarProducto(id);
-    if(p) Object.assign(p, {nombre, categoria, costo, precio, stock});
+    if(p) Object.assign(p, {nombre, categoria, costo, precio, stock, imagen:fotoProductoTemp||null});
   }else{
-    estado.productos.push({id:generarId(), nombre, categoria, costo, precio, stock, creado:hoyISO()});
+    estado.productos.push({id:generarId(), nombre, categoria, costo, precio, stock, imagen:fotoProductoTemp||null, creado:hoyISO()});
   }
   guardarEstado(); cerrarModal(); renderProductos();
 }
@@ -742,7 +762,7 @@ document.getElementById("archivo-importar").addEventListener("change", e=>{
       const datos = JSON.parse(ev.target.result);
       if(!datos || typeof datos!=="object") throw new Error("Archivo inválido");
       if(!confirm("Esto reemplaza los datos actuales por los del respaldo. ¿Continuar?")) return;
-      estado.config = Object.assign({factorSugerido:1.8,margenMinimoPct:25,pin:""}, datos.config||{});
+      estado.config = Object.assign({factorSugerido:1.8,margenMinimoPct:25,pin:"",urlFotos:""}, datos.config||{});
       estado.productos = Array.isArray(datos.productos)?datos.productos:[];
       estado.clientas = Array.isArray(datos.clientas)?datos.clientas:[];
       estado.ventas = Array.isArray(datos.ventas)?datos.ventas:[];
@@ -769,6 +789,7 @@ function renderAjustes(){
   document.getElementById("cfg-factor").value = estado.config.factorSugerido;
   document.getElementById("cfg-margen").value = estado.config.margenMinimoPct;
   document.getElementById("cfg-pin").value = estado.config.pin || "";
+  document.getElementById("cfg-url-fotos").value = estado.config.urlFotos || "";
 }
 document.getElementById("btn-guardar-cfg").addEventListener("click", ()=>{
   const factor = Number(document.getElementById("cfg-factor").value);
@@ -779,6 +800,7 @@ document.getElementById("btn-guardar-cfg").addEventListener("click", ()=>{
   estado.config.factorSugerido = factor;
   estado.config.margenMinimoPct = margen;
   estado.config.pin = pin;
+  estado.config.urlFotos = (document.getElementById("cfg-url-fotos").value || "").trim().replace(/\/$/, "");
   guardarEstado();
   alert("Reglas guardadas ✓");
 });
@@ -786,6 +808,76 @@ document.getElementById("btn-guardar-cfg").addEventListener("click", ()=>{
 /* ---------- Seguridad texto ---------- */
 function escapar(s){
   return String(s==null?"":s).replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+}
+
+/* ============================================================
+   FOTO DE PRODUCTO (usa el servidor de Render)
+   ============================================================ */
+var fotoProductoTemp = null;
+
+function procesarFotoProducto(evento){
+  const archivo = evento.target.files && evento.target.files[0];
+  evento.target.value = "";
+  if(!archivo) return;
+  const estadoTxt = document.getElementById("f-foto-estado");
+  const url = (estado.config.urlFotos || "").trim();
+
+  if(!url){
+    // sin servidor: guardamos la foto tal cual (miniatura), sin mejora
+    estadoTxt.textContent = "Guardada sin mejorar (configura el servidor en Reglas para quitar fondo).";
+    redimensionarADataUrl(archivo, 420, dataUrl=>{
+      fotoProductoTemp = dataUrl;
+      pintarPreviewFoto(dataUrl);
+    });
+    return;
+  }
+
+  estadoTxt.textContent = "Mejorando foto… espera unos segundos.";
+  const form = new FormData();
+  form.append("foto", archivo);
+  fetch(url + "/mejorar", { method:"POST", body:form })
+    .then(r=>{ if(!r.ok) throw new Error("El servidor respondió " + r.status); return r.blob(); })
+    .then(blob=>{
+      redimensionarADataUrl(blob, 420, dataUrl=>{
+        fotoProductoTemp = dataUrl;
+        pintarPreviewFoto(dataUrl);
+        estadoTxt.textContent = "¡Foto lista! ✓";
+      });
+    })
+    .catch(err=>{
+      console.error(err);
+      estadoTxt.textContent = "No se pudo mejorar (¿servidor dormido? reintenta). Guardando sin mejorar…";
+      redimensionarADataUrl(archivo, 420, dataUrl=>{
+        fotoProductoTemp = dataUrl;
+        pintarPreviewFoto(dataUrl);
+      });
+    });
+}
+
+function pintarPreviewFoto(dataUrl){
+  const prev = document.getElementById("f-foto-preview");
+  if(prev) prev.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover">`;
+}
+
+function redimensionarADataUrl(origen, lado, callback){
+  const img = new Image();
+  const url = URL.createObjectURL(origen);
+  img.onload = ()=>{
+    try{
+      const lienzo = document.createElement("canvas");
+      lienzo.width = lado; lienzo.height = lado;
+      const ctx = lienzo.getContext("2d");
+      // recorte centrado cuadrado
+      const min = Math.min(img.width, img.height);
+      const sx = (img.width - min)/2, sy = (img.height - min)/2;
+      ctx.drawImage(img, sx, sy, min, min, 0, 0, lado, lado);
+      callback(lienzo.toDataURL("image/jpeg", 0.82));
+    }catch(e){
+      console.error(e); callback(null);
+    }finally{ URL.revokeObjectURL(url); }
+  };
+  img.onerror = ()=>{ URL.revokeObjectURL(url); callback(null); };
+  img.src = url;
 }
 
 /* ============================================================
