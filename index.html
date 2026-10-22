@@ -6,7 +6,7 @@
 <title>Xime Glow · Ventas</title>
 <style>
   :root{
-    --rosa:#ff4fa3; --rosa-claro:#ffd7e9; --rosa-fondo:#fff2f8;
+    --rosa:#8b5cf6; --rosa-claro:#e9ddff; --rosa-fondo:#f6f1ff;
     --negro:#201820; --gris:#8a7f86; --gris-claro:#efe6ec;
     --ok:#16a34a; --alerta:#dc2626; --aviso:#d97706;
     --blanco:#ffffff; --sombra:0 2px 10px rgba(255,79,163,.18);
@@ -14,9 +14,9 @@
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --rosa:#ff6fb3; --rosa-claro:#4a2238; --rosa-fondo:#1a1016;
-      --negro:#f7eef3; --gris:#b99fad; --gris-claro:#33222c;
-      --blanco:#241820; --sombra:0 2px 10px rgba(0,0,0,.4);
+      --rosa:#a78bfa; --rosa-claro:#3b2a5c; --rosa-fondo:#140f1f;
+      --negro:#f1ebff; --gris:#a99bc6; --gris-claro:#2a2140;
+      --blanco:#1e1630; --sombra:0 2px 10px rgba(0,0,0,.45);
     }
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
@@ -1064,11 +1064,11 @@ function generarPostIG(){
   const ctx = lienzo.getContext("2d");
 
   // fondo
-  ctx.fillStyle="#fff2f8"; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#f6f1ff"; ctx.fillRect(0,0,W,H);
   // banda superior
-  bordeRedondo(ctx,40,40,W-80,210,40); ctx.fillStyle="#ffd7e9"; ctx.fill();
+  bordeRedondo(ctx,40,40,W-80,210,40); ctx.fillStyle="#e9ddff"; ctx.fill();
   ctx.textAlign="center";
-  ctx.fillStyle="#d63384"; ctx.font="800 90px sans-serif"; ctx.fillText("Xime Glow", W/2, 150);
+  ctx.fillStyle="#6d28d9"; ctx.font="800 90px sans-serif"; ctx.fillText("Xime Glow", W/2, 150);
   ctx.fillStyle="#201820"; ctx.font="400 34px sans-serif"; ctx.fillText("Belleza que brilla contigo", W/2, 205);
 
   // grid 2 columnas
@@ -1087,26 +1087,26 @@ function generarPostIG(){
       ctx.fillText(recorta(p.nombre,16), x+cw/2, y+ch-70);
       const pre=pesos(p.precio); ctx.font="800 34px sans-serif";
       const pw=ctx.measureText(pre).width;
-      bordeRedondo(ctx, x+cw/2-pw/2-20, y+ch-52, pw+40, 40, 18); ctx.fillStyle="#ff4fa3"; ctx.fill();
+      bordeRedondo(ctx, x+cw/2-pw/2-20, y+ch-52, pw+40, 40, 18); ctx.fillStyle="#8b5cf6"; ctx.fill();
       ctx.fillStyle="#fff"; ctx.fillText(pre, x+cw/2, y+ch-22);
       cb();
     };
     if(p.imagen){
       const im=new Image();
       im.onload=()=>{ bordeRedondo(ctx,fx,fy,lado,lado,18); ctx.save(); ctx.clip(); ctx.drawImage(im,fx,fy,lado,lado); ctx.restore(); terminar(); };
-      im.onerror=()=>{ bordeRedondo(ctx,fx,fy,lado,lado,18); ctx.fillStyle="#ffd7e9"; ctx.fill(); terminar(); };
+      im.onerror=()=>{ bordeRedondo(ctx,fx,fy,lado,lado,18); ctx.fillStyle="#e9ddff"; ctx.fill(); terminar(); };
       im.src=p.imagen;
     }else{
-      bordeRedondo(ctx,fx,fy,lado,lado,18); ctx.fillStyle="#ffd7e9"; ctx.fill();
-      ctx.fillStyle="#ff4fa3"; ctx.font="60px sans-serif"; ctx.fillText("\uD83D\uDC84", x+cw/2, fy+lado/2+20);
+      bordeRedondo(ctx,fx,fy,lado,lado,18); ctx.fillStyle="#e9ddff"; ctx.fill();
+      ctx.fillStyle="#8b5cf6"; ctx.font="60px sans-serif"; ctx.fillText("\uD83D\uDC84", x+cw/2, fy+lado/2+20);
       terminar();
     }
   }
 
   // footer
   function footer(){
-    bordeRedondo(ctx,40,H-110,W-80,70,30); ctx.fillStyle="#ffd7e9"; ctx.fill();
-    ctx.fillStyle="#d63384"; ctx.font="700 36px sans-serif"; ctx.textAlign="center";
+    bordeRedondo(ctx,40,H-110,W-80,70,30); ctx.fillStyle="#e9ddff"; ctx.fill();
+    ctx.fillStyle="#6d28d9"; ctx.font="700 36px sans-serif"; ctx.textAlign="center";
     ctx.fillText("Haz tu pedido  ·  @ximeglow.mx", W/2, H-62);
   }
 
